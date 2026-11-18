@@ -1,0 +1,77 @@
+.visa-notification {
+  z-index: 999999 !important;
+  padding: 25px !important;
+  border-radius: 10px !important;
+  max-width: 400px !important;
+  font-size: 30px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 15px !important;
+
+  position: fixed !important;
+  top: 20px ;
+  left: 20px !important;
+  opacity: 1;
+  animation: visa-notification-animation .7s;
+  background-color: #F9F9F9 !important;
+  box-shadow: 1px 1px 10px 1px rgba(0, 0, 0, 0.1) !important;
+  font-family: Arial, Helvetica, sans-serif !important
+}
+
+@keyframes visa-notification-animation {
+    from {
+      opacity: 0;
+      top: -200px;
+    }
+}
+
+.visa-notification .visa-icon {
+ height: 60px !important;
+ width: 60px !important;
+}
+
+
+.visa-notification .visa-description {
+  font-weight: 600 !important;
+  font-size: 17px !important;
+  font-family: Arial, Helvetica, sans-serif !important
+}
+
+.visa-notification.visa-success {
+  color: rgb(69, 148, 69) !important;
+}
+
+.visa-notification.visa-success .visa-icon path{
+  fill: rgb(69, 148, 69) !important;
+ }
+
+
+.visa-notification.visa-error {
+  color: red !important;
+}
+
+.visa-notification.visa-error .visa-icon path{
+  fill: red !important;
+ }
+
+.visa-notification .visa-close-btn {
+  background-color: transparent !important;
+  outline: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 12px !important;
+  height: 12px !important;
+  cursor: pointer !important;
+  position: absolute !important;
+  top: 15px !important;
+  right: 15px !important;
+}
+
+.visa-notification .visa-close-btn svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+
