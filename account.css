@@ -203,6 +203,22 @@
   text-align: center;
 }
 
+.account-trade-card-fallback .aniimo-item-top-image {
+  display: grid;
+  width: 100%;
+  height: 72px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.account-trade-card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .account-trade-card-label {
   position: absolute;
   z-index: 9;
