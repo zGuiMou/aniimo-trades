@@ -748,7 +748,13 @@ function duplicateGroups(rows) {
   const groups = new Map();
   for (const row of rows) {
     const key = `${row.aniimo_path}|${row.background_mode}`;
-    const existing = groups.get(key) || { key, name: row.display_name, count: 0 };
+    const existing = groups.get(key) || {
+      key,
+      path: row.aniimo_path,
+      mode: row.background_mode,
+      name: row.display_name,
+      count: 0
+    };
     existing.count += 1;
     groups.set(key, existing);
   }
