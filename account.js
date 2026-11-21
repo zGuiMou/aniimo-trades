@@ -762,10 +762,12 @@ function duplicateGroups(rows) {
 }
 
 let tradeCatalog = null;
+let tradeCatalogByName = null;
 
 function catalogForTrades() {
   if (tradeCatalog) return tradeCatalog;
   tradeCatalog = new Map();
+  tradeCatalogByName = new Map();
   try {
     const source = document.querySelector("#__NUXT_DATA__")?.textContent;
     if (!source) return tradeCatalog;
@@ -789,6 +791,7 @@ function catalogForTrades() {
         const key = String(value.entryId).padStart(3, "0");
         const current = tradeCatalog.get(key);
         if (!current || value.currentMorphology === "Basic Form") tradeCatalog.set(key, value);
+        if (value.name) tradeCatalogByName.set(value.name.trim().toLowerCase(), value);
       }
       Object.values(value).forEach(child => walk(child, visited));
     };
@@ -801,7 +804,14 @@ function catalogForTrades() {
 
 function tradeDetails(group) {
   const match = group.path.match(/\/item\/(\d+)/);
-  return match ? catalogForTrades().get(match[1].padStart(3, "0")) || null : null;
+  catalogForTrades();
+  return tradeCatalogByName.get(group.name.trim().toLowerCase()) ||
+    (match ? tradeCatalog.get(match[1].padStart(3, "0")) || null : null);
+}
+
+function speciesKey(rowOrGroup) {
+  const match = rowOrGroup.aniimo_path?.match(/\/item\/(\d+)/) || rowOrGroup.path?.match(/\/item\/(\d+)/);
+  return match ? match[1].padStart(3, "0") : rowOrGroup.aniimo_key || rowOrGroup.key;
 }
 
 function sharedCount(first = [], second = []) {
@@ -842,11 +852,11 @@ function openDuplicateComparison() {
     showToast("Entre na sua conta e abra o perfil de outro usuÃ¡rio para comparar.", true);
     return;
   }
-  const myOwnedKeys = new Set(ownRows.map(row => `${row.aniimo_path}|${row.background_mode}`));
-  const theirOwnedKeys = new Set(viewingRows.map(row => `${row.aniimo_path}|${row.background_mode}`));
+  const myOwnedSpecies = new Set(ownRows.map(speciesKey));
+  const theirOwnedSpecies = new Set(viewingRows.map(speciesKey));
   // Uma troca sÃ³ existe quando os dois lados oferecem um repetido exclusivo.
-  const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirOwnedKeys.has(group.key));
-  const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !myOwnedKeys.has(group.key));
+  const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirOwnedSpecies.has(speciesKey(group)));
+  const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !myOwnedSpecies.has(speciesKey(group)));
   const pairs = [];
   for (const mineGroup of mine) {
     const mineInfo = tradeDetails(mineGroup);
@@ -854,6 +864,7 @@ function openDuplicateComparison() {
     for (const theirGroup of theirs) {
       const theirInfo = tradeDetails(theirGroup);
       if (!theirInfo) continue;
+      if (speciesKey(mineGroup) === speciesKey(theirGroup)) continue;
       const score = tradeScore(mineInfo, theirInfo);
       if (score > -Infinity) pairs.push({ mine: mineGroup, theirs: theirGroup, mineInfo, theirInfo, score });
     }
