@@ -815,14 +815,19 @@ function tradeScore(mine, theirs) {
   return score;
 }
 
-function tradeCard(group, owner) {
+function tradeCard(group, owner, info) {
   const source = [...document.querySelectorAll(".aniimo-list-grid > a.aniimo-item-container")]
-    .find(card => (card.dataset.accountPath || canonicalPath(card)) === group.path &&
-      (card.dataset.accountMode || backgroundMode(card)) === group.mode);
+    .find(card => (card.dataset.accountPath || canonicalPath(card)) === group.path);
   const card = source ? source.cloneNode(true) : document.createElement("div");
   if (!source) {
     card.className = "aniimo-item-container account-trade-card-fallback";
-    card.innerHTML = `<div class="aniimo-item-top-image"></div><div class="text-center"><span></span></div>`;
+    card.innerHTML = `
+      <div class="aniimo-item-top-image"><img class="account-trade-card-image" alt=""></div>
+      <div class="text-center"><span></span></div>
+    `;
+    const image = card.querySelector("img");
+    image.src = info?.imageUrl ? new URL(info.imageUrl, document.baseURI).href : "";
+    image.alt = group.name;
     card.querySelector("span").textContent = group.name;
   }
   card.classList.add("account-trade-card");
@@ -854,7 +859,7 @@ function openDuplicateComparison() {
       const theirInfo = tradeDetails(theirGroup);
       if (!theirInfo) continue;
       const score = tradeScore(mineInfo, theirInfo);
-      if (score > -Infinity) pairs.push({ mine: mineGroup, theirs: theirGroup, score });
+      if (score > -Infinity) pairs.push({ mine: mineGroup, theirs: theirGroup, mineInfo, theirInfo, score });
     }
   }
   pairs.sort((a, b) => b.score - a.score || a.mine.name.localeCompare(b.mine.name, "pt-BR"));
@@ -880,11 +885,11 @@ function openDuplicateComparison() {
   for (const pair of pairs.slice(0, 30)) {
     const suggestion = document.createElement("article");
     suggestion.className = "account-trade-suggestion";
-    suggestion.append(tradeCard(pair.mine, `@${ownProfile.username}`));
+    suggestion.append(tradeCard(pair.mine, `@${ownProfile.username}`, pair.mineInfo));
     const arrow = document.createElement("div");
     arrow.className = "account-trade-arrow";
     arrow.textContent = "â‡„";
-    suggestion.append(arrow, tradeCard(pair.theirs, `@${viewingProfile.username}`));
+    suggestion.append(arrow, tradeCard(pair.theirs, `@${viewingProfile.username}`, pair.theirInfo));
     grid.append(suggestion);
   }
 }
