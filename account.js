@@ -786,7 +786,9 @@ function catalogForTrades() {
       if (!value || typeof value !== "object" || visited.has(value)) return;
       visited.add(value);
       if (value.type === "ANIIMO" && value.entryId && value.currentStage) {
-        tradeCatalog.set(String(value.entryId).padStart(3, "0"), value);
+        const key = String(value.entryId).padStart(3, "0");
+        const current = tradeCatalog.get(key);
+        if (!current || value.currentMorphology === "Basic Form") tradeCatalog.set(key, value);
       }
       Object.values(value).forEach(child => walk(child, visited));
     };
@@ -816,28 +818,22 @@ function tradeScore(mine, theirs) {
 }
 
 function tradeCard(group, owner, info) {
-  const source = [...document.querySelectorAll(".aniimo-list-grid > a.aniimo-item-container")]
-    .find(card => (card.dataset.accountPath || canonicalPath(card)) === group.path);
-  const card = source ? source.cloneNode(true) : document.createElement("div");
-  if (!source) {
-    card.className = "aniimo-item-container account-trade-card-fallback";
-    card.innerHTML = `
-      <div class="aniimo-item-top-image"><img class="account-trade-card-image" alt=""></div>
-      <div class="text-center"><span></span></div>
-    `;
-    const image = card.querySelector("img");
-    image.src = info?.imageUrl ? new URL(info.imageUrl, document.baseURI).href : "";
-    image.alt = group.name;
-    card.querySelector("span").textContent = group.name;
-  }
-  card.classList.add("account-trade-card");
-  clearCardControls(card);
-  card.removeAttribute("data-account-profile-clone");
-  setCardBackground(card, group.mode);
+  const card = document.createElement("article");
+  card.className = "account-trade-card";
+  const image = document.createElement("img");
+  image.className = "account-trade-card-image";
+  image.src = info?.imageUrl ? new URL(info.imageUrl, document.baseURI).href : "";
+  image.alt = group.name;
+  const number = document.createElement("span");
+  number.className = "account-trade-card-number";
+  number.textContent = info?.entryId ? `NO.${String(info.entryId).padStart(3, "0")}` : "Aniimo";
+  const name = document.createElement("strong");
+  name.className = "account-trade-card-name";
+  name.textContent = group.name;
   const label = document.createElement("span");
   label.className = "account-trade-card-label";
   label.textContent = `${owner}: ${group.count} cÃ³pias`;
-  card.append(label);
+  card.append(number, image, name, label);
   return card;
 }
 
