@@ -816,10 +816,15 @@ function tradeScore(mine, theirs) {
 }
 
 function tradeCard(group, owner) {
-  const source = [...document.querySelectorAll(".aniimo-list-grid > a.aniimo-item-container:not([data-account-profile-clone])")]
-    .find(card => canonicalPath(card) === group.path);
+  const source = [...document.querySelectorAll(".aniimo-list-grid > a.aniimo-item-container")]
+    .find(card => (card.dataset.accountPath || canonicalPath(card)) === group.path &&
+      (card.dataset.accountMode || backgroundMode(card)) === group.mode);
   const card = source ? source.cloneNode(true) : document.createElement("div");
-  if (!source) card.textContent = group.name;
+  if (!source) {
+    card.className = "aniimo-item-container account-trade-card-fallback";
+    card.innerHTML = `<div class="aniimo-item-top-image"></div><div class="text-center"><span></span></div>`;
+    card.querySelector("span").textContent = group.name;
+  }
   card.classList.add("account-trade-card");
   clearCardControls(card);
   card.removeAttribute("data-account-profile-clone");
@@ -836,14 +841,11 @@ function openDuplicateComparison() {
     showToast("Entre na sua conta e abra o perfil de outro usuÃ¡rio para comparar.", true);
     return;
   }
-  const mineAll = new Map([...duplicateGroups(ownRows), ...ownRows.map(row => [
-    `${row.aniimo_path}|${row.background_mode}`, { path: row.aniimo_path, mode: row.background_mode }
-  ])]);
-  const theirsAll = new Map([...duplicateGroups(viewingRows), ...viewingRows.map(row => [
-    `${row.aniimo_path}|${row.background_mode}`, { path: row.aniimo_path, mode: row.background_mode }
-  ])]);
-  const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirsAll.has(group.key));
-  const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !mineAll.has(group.key));
+  const myOwnedKeys = new Set(ownRows.map(row => `${row.aniimo_path}|${row.background_mode}`));
+  const theirOwnedKeys = new Set(viewingRows.map(row => `${row.aniimo_path}|${row.background_mode}`));
+  // Uma troca sÃ³ existe quando os dois lados oferecem um repetido exclusivo.
+  const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirOwnedKeys.has(group.key));
+  const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !myOwnedKeys.has(group.key));
   const pairs = [];
   for (const mineGroup of mine) {
     const mineInfo = tradeDetails(mineGroup);
@@ -860,7 +862,7 @@ function openDuplicateComparison() {
     <section class="account-modal account-comparison-modal" role="dialog" aria-modal="true" aria-labelledby="account-comparison-title">
       <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">&times;</button>
       <h2 id="account-comparison-title">SugestÃµes de troca com @${viewingProfile.username}</h2>
-      <p>Somente repetidos que o outro ainda nÃ£o possui. As sugestÃµes nunca misturam Lumin, Gamma e Nova; regiÃ£o, elemento e funÃ§Ã£o definem a prioridade.</p>
+      <p>Cada par troca dois repetidos exclusivos: vocÃª recebe um Aniimo que ainda nÃ£o tem e a outra pessoa recebe um que ainda nÃ£o possui. As sugestÃµes nunca misturam Lumin, Gamma e Nova; regiÃ£o, elemento e funÃ§Ã£o definem a prioridade.</p>
       <p class="account-modal-message" data-trade-message></p>
       <div class="account-trade-grid" data-trade-grid></div>
     </section>
