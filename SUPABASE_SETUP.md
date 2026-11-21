@@ -17,7 +17,7 @@ O link pÃºblico usa `/?profile=nome-de-usuario`. A lista do perfil abre com as
 
 ## DiretÃ³rio e troca de repetidos
 
-O botÃ£o **UsuÃ¡rios** abre um diretÃ³rio pÃºblico de perfis cadastrados. Ao visitar o perfil de outra pessoa estando autenticado, use **Comparar repetidos** para ver os Aniimos que somente vocÃª tem repetidos, os que somente a outra pessoa tem e os repetidos em comum. Um repetido Ã© um Aniimo (ou sua variante Umbral) com duas ou mais cÃ³pias.
+O botÃ£o **UsuÃ¡rios** abre um diretÃ³rio pÃºblico de perfis cadastrados. Ao visitar o perfil de outra pessoa estando autenticado, use **Comparar repetidos** para abrir sugestÃµes visuais de troca com os prÃ³prios cards da wiki. Uma sugestÃ£o usa somente repetidos que a outra pessoa ainda nÃ£o possui e nunca mistura estÃ¡gios: Lumin troca somente por Lumin, Gamma somente por Gamma e Nova somente por Nova. Dentro do mesmo estÃ¡gio, sÃ£o priorizados regiÃ£o, elemento e funÃ§Ã£o em comum. Um repetido Ã© um Aniimo (ou sua variante Umbral) com duas ou mais cÃ³pias.
 
 Nenhuma alteraÃ§Ã£o adicional no banco Ã© necessÃ¡ria: as polÃ­ticas jÃ¡ permitem a leitura pÃºblica de `profiles` e `aniimo_copies`.
 
