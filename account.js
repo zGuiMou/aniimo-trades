@@ -755,10 +755,74 @@ function duplicateGroups(rows) {
   return new Map([...groups].filter(([, group]) => group.count > 1));
 }
 
-function comparisonItem(group) {
-  const item = document.createElement("li");
-  item.textContent = `${group.name} (${group.count} cÃ³pias)`;
-  return item;
+let tradeCatalog = null;
+
+function catalogForTrades() {
+  if (tradeCatalog) return tradeCatalog;
+  tradeCatalog = new Map();
+  try {
+    const source = document.querySelector("#__NUXT_DATA__")?.textContent;
+    if (!source) return tradeCatalog;
+    const flat = JSON.parse(source);
+    const cache = new Map();
+    const revive = index => {
+      if (!Number.isInteger(index) || index < 0 || index >= flat.length) return index;
+      if (cache.has(index)) return cache.get(index);
+      const value = flat[index];
+      if (!value || typeof value !== "object") return value;
+      const result = Array.isArray(value) ? [] : {};
+      cache.set(index, result);
+      if (Array.isArray(value)) result.push(...value.map(revive));
+      else for (const [key, child] of Object.entries(value)) result[key] = revive(child);
+      return result;
+    };
+    const walk = (value, visited = new Set()) => {
+      if (!value || typeof value !== "object" || visited.has(value)) return;
+      visited.add(value);
+      if (value.type === "ANIIMO" && value.entryId && value.currentStage) {
+        tradeCatalog.set(String(value.entryId).padStart(3, "0"), value);
+      }
+      Object.values(value).forEach(child => walk(child, visited));
+    };
+    walk(revive(0));
+  } catch (error) {
+    console.warn("NÃ£o foi possÃ­vel ler o catÃ¡logo para as sugestÃµes de troca.", error);
+  }
+  return tradeCatalog;
+}
+
+function tradeDetails(group) {
+  const match = group.path.match(/\/item\/(\d+)/);
+  return match ? catalogForTrades().get(match[1].padStart(3, "0")) || null : null;
+}
+
+function sharedCount(first = [], second = []) {
+  return first.filter(value => second.includes(value)).length;
+}
+
+function tradeScore(mine, theirs) {
+  if (mine.currentStage !== theirs.currentStage) return -Infinity;
+  let score = 0;
+  if (mine.countryId === theirs.countryId) score += 100;
+  score += sharedCount(mine.attributes, theirs.attributes) * 10;
+  score += sharedCount(mine.position, theirs.position) * 6;
+  return score;
+}
+
+function tradeCard(group, owner) {
+  const source = [...document.querySelectorAll(".aniimo-list-grid > a.aniimo-item-container:not([data-account-profile-clone])")]
+    .find(card => canonicalPath(card) === group.path);
+  const card = source ? source.cloneNode(true) : document.createElement("div");
+  if (!source) card.textContent = group.name;
+  card.classList.add("account-trade-card");
+  clearCardControls(card);
+  card.removeAttribute("data-account-profile-clone");
+  setCardBackground(card, group.mode);
+  const label = document.createElement("span");
+  label.className = "account-trade-card-label";
+  label.textContent = `${owner}: ${group.count} cÃ³pias`;
+  card.append(label);
+  return card;
 }
 
 function openDuplicateComparison() {
@@ -766,36 +830,55 @@ function openDuplicateComparison() {
     showToast("Entre na sua conta e abra o perfil de outro usuÃ¡rio para comparar.", true);
     return;
   }
-  const mine = duplicateGroups(ownRows);
-  const theirs = duplicateGroups(viewingRows);
-  const mineOnly = [...mine.values()].filter(group => !theirs.has(group.key));
-  const theirsOnly = [...theirs.values()].filter(group => !mine.has(group.key));
-  const both = [...mine.values()].filter(group => theirs.has(group.key));
+  const mineAll = new Map([...duplicateGroups(ownRows), ...ownRows.map(row => [
+    `${row.aniimo_path}|${row.background_mode}`, { path: row.aniimo_path, mode: row.background_mode }
+  ])]);
+  const theirsAll = new Map([...duplicateGroups(viewingRows), ...viewingRows.map(row => [
+    `${row.aniimo_path}|${row.background_mode}`, { path: row.aniimo_path, mode: row.background_mode }
+  ])]);
+  const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirsAll.has(group.key));
+  const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !mineAll.has(group.key));
+  const pairs = [];
+  for (const mineGroup of mine) {
+    const mineInfo = tradeDetails(mineGroup);
+    if (!mineInfo) continue;
+    for (const theirGroup of theirs) {
+      const theirInfo = tradeDetails(theirGroup);
+      if (!theirInfo) continue;
+      const score = tradeScore(mineInfo, theirInfo);
+      if (score > -Infinity) pairs.push({ mine: mineGroup, theirs: theirGroup, score });
+    }
+  }
+  pairs.sort((a, b) => b.score - a.score || a.mine.name.localeCompare(b.mine.name, "pt-BR"));
   const modal = modalShell(`
     <section class="account-modal account-comparison-modal" role="dialog" aria-modal="true" aria-labelledby="account-comparison-title">
       <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">&times;</button>
-      <h2 id="account-comparison-title">Repetidos: @${ownProfile.username} e @${viewingProfile.username}</h2>
-      <p>Considera repetido todo Aniimo com duas ou mais cÃ³pias, incluindo a variante normal ou Umbral correspondente.</p>
-      <div class="account-comparison-grid">
-        <section><h3>SÃ³ vocÃª tem</h3><ul data-mine-only></ul></section>
-        <section><h3>SÃ³ @${viewingProfile.username} tem</h3><ul data-theirs-only></ul></section>
-        <section><h3>Ambos tÃªm repetido</h3><ul data-both></ul></section>
-      </div>
+      <h2 id="account-comparison-title">SugestÃµes de troca com @${viewingProfile.username}</h2>
+      <p>Somente repetidos que o outro ainda nÃ£o possui. As sugestÃµes nunca misturam Lumin, Gamma e Nova; regiÃ£o, elemento e funÃ§Ã£o definem a prioridade.</p>
+      <p class="account-modal-message" data-trade-message></p>
+      <div class="account-trade-grid" data-trade-grid></div>
     </section>
   `);
-  const fill = (selector, groups, empty) => {
-    const list = modal.querySelector(selector);
-    if (!groups.length) {
-      const item = document.createElement("li");
-      item.textContent = empty;
-      list.append(item);
-      return;
-    }
-    groups.sort((a, b) => a.name.localeCompare(b.name, "pt-BR")).forEach(group => list.append(comparisonItem(group)));
-  };
-  fill("[data-mine-only]", mineOnly, "Nenhum Aniimo repetido exclusivo.");
-  fill("[data-theirs-only]", theirsOnly, "Nenhum Aniimo repetido exclusivo.");
-  fill("[data-both]", both, "NÃ£o hÃ¡ repetidos em comum.");
+  const grid = modal.querySelector("[data-trade-grid]");
+  const message = modal.querySelector("[data-trade-message]");
+  if (!catalogForTrades().size) {
+    message.textContent = "O catÃ¡logo da wiki nÃ£o foi carregado; atualize a pÃ¡gina e tente novamente.";
+    return;
+  }
+  if (!pairs.length) {
+    message.textContent = "NÃ£o hÃ¡ uma troca compatÃ­vel entre os repetidos exclusivos de vocÃªs.";
+    return;
+  }
+  for (const pair of pairs.slice(0, 30)) {
+    const suggestion = document.createElement("article");
+    suggestion.className = "account-trade-suggestion";
+    suggestion.append(tradeCard(pair.mine, `@${ownProfile.username}`));
+    const arrow = document.createElement("div");
+    arrow.className = "account-trade-arrow";
+    arrow.textContent = "â‡„";
+    suggestion.append(arrow, tradeCard(pair.theirs, `@${viewingProfile.username}`));
+    grid.append(suggestion);
+  }
 }
 
 async function waitForGrid() {
