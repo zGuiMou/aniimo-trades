@@ -188,6 +188,21 @@
   transform: none !important;
 }
 
+.account-trade-card-fallback {
+  position: relative;
+  display: flex;
+  min-height: 92px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c9c8d1;
+  border-radius: 8px;
+  padding: 10px;
+  color: #343348;
+  background: #f6f6fa;
+  font: 12px/1.3 Arial, sans-serif;
+  text-align: center;
+}
+
 .account-trade-card-label {
   position: absolute;
   z-index: 9;
