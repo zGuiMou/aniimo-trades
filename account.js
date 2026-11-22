@@ -961,22 +961,29 @@ function normalizeAniimoPath(value) {
 
 function cardPaths(card) {
   const values = [
-    card.dataset.accountPath,
     canonicalPath(card),
     card.getAttribute("href"),
+    card.dataset.accountPath,
     ...[...card.querySelectorAll("a[href]")].map(link => link.getAttribute("href"))
   ];
   return new Set(values.map(normalizeAniimoPath).filter(Boolean));
 }
 
+function pathMatchScore(candidate, targetPath, exactScore, nestedScore) {
+  if (candidate === targetPath) return exactScore;
+  return candidate.startsWith(`${targetPath}/`) ? nestedScore : 0;
+}
+
 function cardPathMatchScore(card, targetPath) {
-  let score = 0;
-  for (const candidate of cardPaths(card)) {
-    if (candidate === targetPath) score = Math.max(score, 2);
-    // A wiki pode acrescentar a região ao href; o prefixo da forma ainda é único.
-    else if (candidate.startsWith(`${targetPath}/`)) score = Math.max(score, 1);
-  }
-  return score;
+  const hrefPaths = [canonicalPath(card), normalizeAniimoPath(card.getAttribute("href"))];
+  const accountPath = normalizeAniimoPath(card.dataset.accountPath);
+  const nestedPaths = [...card.querySelectorAll("a[href]")]
+    .map(link => normalizeAniimoPath(link.getAttribute("href")));
+  return Math.max(
+    ...hrefPaths.map(path => pathMatchScore(path, targetPath, 4, 3)),
+    pathMatchScore(accountPath, targetPath, 2, 1),
+    ...nestedPaths.map(path => pathMatchScore(path, targetPath, 1, 1))
+  );
 }
 
 function imageSource(img) {
@@ -1008,11 +1015,8 @@ function cacheGridCardImages() {
     const source = imageSourceFromCard(card);
     if (!source) continue;
     const mode = String(card.dataset.accountMode || "").toLowerCase();
-    for (const path of cardPaths(card)) {
-      const modeKey = imageCacheKey(path, mode);
-      if (modeKey) cardImageCache.set(modeKey, source);
-      if (!cardImageCache.has(path)) cardImageCache.set(path, source);
-    }
+    const modeKey = imageCacheKey(canonicalPath(card), mode);
+    if (modeKey) cardImageCache.set(modeKey, source);
   }
 }
 
@@ -1021,8 +1025,7 @@ function findCardImageSrc(path, mode) {
   if (!targetPath) return "";
   const targetMode = String(mode || "").toLowerCase();
   cacheGridCardImages();
-  const cached = cardImageCache.get(imageCacheKey(targetPath, targetMode)) ||
-    cardImageCache.get(targetPath);
+  const cached = cardImageCache.get(imageCacheKey(targetPath, targetMode));
   if (cached) return cached;
   const cards = [...document.querySelectorAll(".aniimo-list-grid a.aniimo-item-container")];
 
