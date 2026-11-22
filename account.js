@@ -32,6 +32,8 @@ let gridObserver = null;
 let renderScheduled = false;
 let toastTimer = 0;
 let umbralsCatalogCache = null;
+let variantImageCatalog = null;
+let variantImageCatalogPromise = null;
 
 function isSecretKey(value) {
   if (typeof value !== "string") return false;
@@ -948,6 +950,41 @@ function variantLabel(group, info) {
   return info?.currentMorphology || "Basic Form";
 }
 
+function variantImageKey(path) {
+  const match = normalizeAniimoPath(path).match(/\/item\/(\d+)\/([^/?#]+)/);
+  return match ? `${match[1].padStart(3, "0")}/${match[2]}` : "";
+}
+
+async function loadVariantImageCatalog() {
+  if (variantImageCatalog) return variantImageCatalog;
+  if (variantImageCatalogPromise) return variantImageCatalogPromise;
+  const source = new URL(
+    "/_external/kg-web-cdn.akamaized.net/master/worldx/wiki-frontend/_nuxt/aniimo-variants-pt.json",
+    document.baseURI
+  );
+  variantImageCatalogPromise = fetch(source).then(async response => {
+    if (!response.ok) throw new Error(`Não foi possível carregar imagens das variantes (${response.status}).`);
+    const variants = await response.json();
+    variantImageCatalog = new Map();
+    for (const variant of variants) {
+      const info = variant?.searchKey;
+      const entry = String(info?.entryId || "").padStart(3, "0");
+      const morphology = String(info?.currentMorphology || "").trim().toLowerCase().replace(/\s+/g, "-");
+      if (!entry || !morphology || !info?.imageUrl) continue;
+      variantImageCatalog.set(
+        `${entry}/${morphology}`,
+        new URL(info.imageUrl, document.baseURI).href
+      );
+    }
+    return variantImageCatalog;
+  }).finally(() => { variantImageCatalogPromise = null; });
+  return variantImageCatalogPromise;
+}
+
+function variantImageSrc(path) {
+  return variantImageCatalog?.get(variantImageKey(path)) || "";
+}
+
 function normalizeAniimoPath(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -1025,9 +1062,12 @@ function tradeCard(group, owner, info) {
 
   const image = document.createElement("img");
   image.className = "account-trade-card-image";
+  const variantSrc = variantImageSrc(group.path);
   const domImgSrc = findCardImageSrc(group.path, group.mode);
   const fallbackSrc = info?.imageUrl ? new URL(info.imageUrl, document.baseURI).href : "";
-  image.src = domImgSrc || fallbackSrc;
+  // O HTML dos cards pode ainda não conter a imagem por causa do lazy loading.
+  // O catálogo de variantes é a fonte determinística para formas como Trovoada.
+  image.src = variantSrc || domImgSrc || fallbackSrc;
   image.alt = `${group.name} (${variantLabel(group, info)})`;
 
   const number = document.createElement("span");
@@ -1061,8 +1101,14 @@ async function openDuplicateComparison() {
   try {
     await enableVariantsForProfile();
   } catch (error) {
-    showToast(error.message, true);
+    showToast(error.message || "Não foi possível preparar as variantes.", true);
     return;
+  }
+  try {
+    await loadVariantImageCatalog();
+  } catch (error) {
+    // A comparação continua disponível com as imagens de reserva.
+    console.warn("Não foi possível carregar o catálogo de imagens das variantes.", error);
   }
   const myOwnedSpecies = new Set(ownRows.map(speciesKey));
   const theirOwnedSpecies = new Set(viewingRows.map(speciesKey));
