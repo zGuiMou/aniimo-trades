@@ -32,11 +32,16 @@
   opacity: .6;
 }
 
-.account-add-button {
+.aniimo-options-variants-all,
+.wiki-container-content-filter-item:has(.aniimo-options-variants-all) {
+  display: none !important;
+}
+
+.account-add-button,
+.account-remove-button {
   position: absolute;
   z-index: 8;
   top: 4px;
-  right: 4px;
   display: grid;
   width: 30px;
   height: 30px;
@@ -53,19 +58,34 @@
   transition: opacity .16s ease, transform .16s ease, background .16s ease;
 }
 
+.account-add-button {
+  right: 4px;
+}
+
+.account-remove-button {
+  left: 4px;
+  background: #c73535;
+}
+
 .aniimo-item-container:hover {
   transform: translateY(-4px);
   transition: transform .16s ease;
 }
 
 .aniimo-item-container:hover .account-add-button,
-.aniimo-item-container:focus-within .account-add-button {
+.aniimo-item-container:hover .account-remove-button,
+.aniimo-item-container:focus-within .account-add-button,
+.aniimo-item-container:focus-within .account-remove-button {
   opacity: 1;
   transform: scale(1);
 }
 
 .account-add-button:hover {
   background: #17883a;
+}
+
+.account-remove-button:hover {
+  background: #9f2525;
 }
 
 .account-count-badge {
@@ -131,6 +151,30 @@
 
 .account-profile-panel .account-profile-error {
   color: #a32121;
+}
+
+.account-umbrals-progress {
+  flex: 1 1 220px;
+  min-width: 180px;
+  color: #343348;
+  font: 700 12px/1.2 Arial, sans-serif;
+}
+
+.account-umbrals-progress-track {
+  height: 10px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dedde5;
+}
+
+.account-umbrals-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6e45b8, #b778ff);
+  transition: width .25s ease;
 }
 
 .account-directory-search {
@@ -404,7 +448,8 @@
 }
 
 @media (hover: none) {
-  .account-add-button {
+  .account-add-button,
+  .account-remove-button {
     opacity: 1;
     transform: scale(1);
   }
