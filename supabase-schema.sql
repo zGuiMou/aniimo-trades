@@ -8,6 +8,9 @@ create table if not exists public.profiles (
 create unique index if not exists profiles_username_lower_idx
   on public.profiles (lower(username));
 
+alter table public.profiles
+  add column if not exists collection_updated_at timestamptz;
+
 create table if not exists public.aniimo_copies (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -27,6 +30,13 @@ create table if not exists public.aniimo_copies (
 
 create index if not exists aniimo_copies_user_idx
   on public.aniimo_copies (user_id, created_at);
+
+alter table public.aniimo_copies
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.aniimo_copies
+set updated_at = created_at
+where updated_at is null;
 
 alter table public.profiles enable row level security;
 alter table public.aniimo_copies enable row level security;
@@ -66,6 +76,50 @@ create policy "Users can remove from their collection"
 grant select, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.aniimo_copies to authenticated;
 grant select on public.profiles, public.aniimo_copies to anon;
+
+create or replace function public.set_aniimo_copy_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_aniimo_copy_updated_at on public.aniimo_copies;
+create trigger on_aniimo_copy_updated_at
+  before update on public.aniimo_copies
+  for each row execute procedure public.set_aniimo_copy_updated_at();
+
+create or replace function public.touch_profile_collection_updated_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.profiles
+  set collection_updated_at = now()
+  where id = coalesce(new.user_id, old.user_id);
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists on_aniimo_copy_collection_changed on public.aniimo_copies;
+create trigger on_aniimo_copy_collection_changed
+  after insert or update or delete on public.aniimo_copies
+  for each row execute procedure public.touch_profile_collection_updated_at();
+
+update public.profiles profile
+set collection_updated_at = latest.changed_at
+from (
+  select user_id, max(greatest(created_at, updated_at)) as changed_at
+  from public.aniimo_copies
+  group by user_id
+) latest
+where profile.id = latest.user_id
+  and profile.collection_updated_at is null;
 
 create or replace function public.create_profile_for_new_user()
 returns trigger

@@ -31,7 +31,6 @@ let observedGrid = null;
 let gridObserver = null;
 let renderScheduled = false;
 let toastTimer = 0;
-const cardImageCache = new Map();
 let umbralsCatalogCache = null;
 
 function isSecretKey(value) {
@@ -168,7 +167,7 @@ async function authUser(retried = false) {
 }
 
 function profileQuery(field, value) {
-  const params = new URLSearchParams({ select: "id,username", [field]: `eq.${value}`, limit: "1" });
+  const params = new URLSearchParams({ select: "id,username,collection_updated_at", [field]: `eq.${value}`, limit: "1" });
   return `profiles?${params}`;
 }
 
@@ -184,7 +183,7 @@ async function findProfileByUsername(username) {
 
 async function loadProfiles() {
   const params = new URLSearchParams({
-    select: "id,username,created_at",
+    select: "id,username,created_at,collection_updated_at",
     order: "username.asc",
     limit: "500"
   });
@@ -768,6 +767,15 @@ function umbralsProgress(rows) {
   return { current, total, percent: total ? Math.round(current / total * 100) : 0 };
 }
 
+function collectionUpdatedAtLabel(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "sem atualizações";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
 function mountProfilePanel() {
   if (!profileMode || !observedGrid) return;
   if (!profilePanel || !profilePanel.isConnected) {
@@ -812,7 +820,7 @@ function mountProfilePanel() {
   const status = profilePanel.querySelector("[data-profile-status]");
   const titleText = viewingProfile ? `Coleção de @${viewingProfile.username}` : "Perfil público";
   const statusText = profileError || (viewingProfile
-    ? `${viewingRows.length} Aniimos na coleção${currentUser?.id === viewingProfile.id ? " — este é o seu perfil" : ""}.`
+    ? `${viewingRows.length} Aniimos na coleção${currentUser?.id === viewingProfile.id ? " — este é o seu perfil" : ""}. Última atualização: ${collectionUpdatedAtLabel(viewingProfile.collection_updated_at)}.`
     : "Carregando perfil público…");
   if (title.textContent !== titleText) title.textContent = titleText;
   status.classList.toggle("account-profile-error", Boolean(profileError));
@@ -959,31 +967,14 @@ function normalizeAniimoPath(value) {
   }
 }
 
-function cardPaths(card) {
-  const values = [
-    canonicalPath(card),
-    card.getAttribute("href"),
-    card.dataset.accountPath,
-    ...[...card.querySelectorAll("a[href]")].map(link => link.getAttribute("href"))
-  ];
-  return new Set(values.map(normalizeAniimoPath).filter(Boolean));
-}
-
 function pathMatchScore(candidate, targetPath, exactScore, nestedScore) {
   if (candidate === targetPath) return exactScore;
   return candidate.startsWith(`${targetPath}/`) ? nestedScore : 0;
 }
 
 function cardPathMatchScore(card, targetPath) {
-  const hrefPaths = [canonicalPath(card), normalizeAniimoPath(card.getAttribute("href"))];
-  const accountPath = normalizeAniimoPath(card.dataset.accountPath);
-  const nestedPaths = [...card.querySelectorAll("a[href]")]
-    .map(link => normalizeAniimoPath(link.getAttribute("href")));
-  return Math.max(
-    ...hrefPaths.map(path => pathMatchScore(path, targetPath, 4, 3)),
-    pathMatchScore(accountPath, targetPath, 2, 1),
-    ...nestedPaths.map(path => pathMatchScore(path, targetPath, 1, 1))
-  );
+  const hrefPath = normalizeAniimoPath(card.getAttribute("href"));
+  return pathMatchScore(hrefPath, targetPath, 2, 1);
 }
 
 function imageSource(img) {
@@ -1004,29 +995,10 @@ function imageSourceFromCard(card) {
   return "";
 }
 
-function imageCacheKey(path, mode = "") {
-  const normalizedPath = normalizeAniimoPath(path);
-  return normalizedPath ? `${normalizedPath}|${String(mode).toLowerCase()}` : "";
-}
-
-function cacheGridCardImages() {
-  const cards = document.querySelectorAll(".aniimo-list-grid a.aniimo-item-container");
-  for (const card of cards) {
-    const source = imageSourceFromCard(card);
-    if (!source) continue;
-    const mode = String(card.dataset.accountMode || "").toLowerCase();
-    const modeKey = imageCacheKey(canonicalPath(card), mode);
-    if (modeKey) cardImageCache.set(modeKey, source);
-  }
-}
-
 function findCardImageSrc(path, mode) {
   const targetPath = normalizeAniimoPath(path);
   if (!targetPath) return "";
   const targetMode = String(mode || "").toLowerCase();
-  cacheGridCardImages();
-  const cached = cardImageCache.get(imageCacheKey(targetPath, targetMode));
-  if (cached) return cached;
   const cards = [...document.querySelectorAll(".aniimo-list-grid a.aniimo-item-container")];
 
   const matches = cards
@@ -1199,7 +1171,6 @@ async function enableVariantsForProfile() {
   const grid = await waitForGrid();
   if (!button) return;
   if (button.classList.contains("is-selected")) {
-    cacheGridCardImages();
     cacheUmbralsCatalogPaths();
     return;
   }
@@ -1210,7 +1181,6 @@ async function enableVariantsForProfile() {
     const cardCount = grid.querySelectorAll(":scope > a.aniimo-item-container").length;
     if (variantsSelected && cardCount > 130) {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      cacheGridCardImages();
       cacheUmbralsCatalogPaths();
       return;
     }
