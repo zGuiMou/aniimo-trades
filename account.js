@@ -113,7 +113,7 @@ async function authRequest(path, body, token = SUPABASE_ANON_KEY, method = "POST
 }
 
 async function refreshSession() {
-  if (!session?.refresh_token) throw new Error("Sua sessÃ£o expirou. Entre novamente.");
+  if (!session?.refresh_token) throw new Error("Sua sessão expirou. Entre novamente.");
   try {
     const refreshed = await authRequest(
       "/auth/v1/token?grant_type=refresh_token",
@@ -243,17 +243,17 @@ function modalMessage(modal, text, success = false) {
 function openConfigurationDialog() {
   const modal = modalShell(`
     <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-setup-title">
-      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">Ã—</button>
+      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">×</button>
       <h2 id="account-setup-title">Configure as contas</h2>
-      <p>Adicione a Project URL e a chave pÃºblica do Supabase em <code>supabase-config.js</code> e execute <code>supabase-schema.sql</code> no SQL Editor do projeto.</p>
-      <p>Use somente a chave pÃºblica anon/publishable â€” nunca a chave <code>service_role</code>.</p>
+      <p>Adicione a Project URL e a chave pública do Supabase em <code>supabase-config.js</code> e execute <code>supabase-schema.sql</code> no SQL Editor do projeto.</p>
+      <p>Use somente a chave pública anon/publishable — nunca a chave <code>service_role</code>.</p>
       <p data-account-config-warning></p>
-      <p><a href="SUPABASE_SETUP.md" target="_blank" rel="noopener">Ver instruÃ§Ãµes completas</a></p>
+      <p><a href="SUPABASE_SETUP.md" target="_blank" rel="noopener">Ver instruções completas</a></p>
     </section>
   `);
   if (secretKeySupplied) {
     modal.querySelector("[data-account-config-warning]").textContent =
-      "A chave configurada parece ser secreta e nÃ£o serÃ¡ usada. Remova-a do arquivo e use a chave pÃºblica.";
+      "A chave configurada parece ser secreta e não será usada. Remova-a do arquivo e use a chave pública.";
   }
   modal.querySelector("[data-account-close]").focus();
 }
@@ -361,10 +361,10 @@ function openAuthModal() {
   }
   const modal = modalShell(`
     <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-auth-title">
-      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">Ã—</button>
-      <h2 id="account-auth-title">Entrar na coleÃ§Ã£o</h2>
+      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">×</button>
+      <h2 id="account-auth-title">Entrar na coleção</h2>
       <form class="account-form" novalidate>
-        <label data-signup-field>Nome de usuÃ¡rio
+        <label data-signup-field>Nome de usuário
           <input name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}">
         </label>
         <label>E-mail
@@ -391,12 +391,12 @@ function openAuthModal() {
 
   const updateMode = () => {
     const signup = mode === "signup";
-    title.textContent = signup ? "Criar conta" : "Entrar na coleÃ§Ã£o";
+    title.textContent = signup ? "Criar conta" : "Entrar na coleção";
     modal.querySelector("[data-signup-field]").hidden = !signup;
     username.required = signup;
     password.autocomplete = signup ? "new-password" : "current-password";
     submit.textContent = signup ? "Criar conta" : "Entrar";
-    toggle.textContent = signup ? "JÃ¡ tenho conta" : "Criar conta";
+    toggle.textContent = signup ? "Já tenho conta" : "Criar conta";
     modalMessage(modal, "");
   };
 
@@ -411,7 +411,7 @@ function openAuthModal() {
     const passwordValue = form.elements.password.value;
     const usernameValue = form.elements.username.value.trim().toLowerCase();
     if (mode === "signup" && !/^[a-zA-Z0-9_]{3,24}$/.test(usernameValue)) {
-      modalMessage(modal, "Use de 3 a 24 letras, nÃºmeros ou _ no nome de usuÃ¡rio.");
+      modalMessage(modal, "Use de 3 a 24 letras, números ou _ no nome de usuário.");
       return;
     }
     if (passwordValue.length < 8) {
@@ -457,7 +457,7 @@ function openAuthModal() {
 
 async function completeLogin(value) {
   if (!value?.access_token || !value?.refresh_token) {
-    throw new Error("O Supabase nÃ£o retornou uma sessÃ£o vÃ¡lida.");
+    throw new Error("O Supabase não retornou uma sessão válida.");
   }
   saveSession(value);
   await loadSignedInState();
@@ -466,7 +466,7 @@ async function completeLogin(value) {
 async function loadSignedInState() {
   const user = await authUser();
   const profile = await findProfileById(user.id);
-  if (!profile) throw new Error("Perfil nÃ£o encontrado. Verifique a configuraÃ§Ã£o do trigger no Supabase.");
+  if (!profile) throw new Error("Perfil não encontrado. Verifique a configuração do trigger no Supabase.");
   currentUser = user;
   ownProfile = profile;
   ownRows = await loadCopies(user.id);
@@ -484,7 +484,7 @@ async function signOut() {
     clearSession();
     viewingRows = profileMode ? viewingRows : [];
     mountProfilePanel();
-    showToast("VocÃª saiu da conta.");
+    showToast("Você saiu da conta.");
   } catch (error) {
     showToast(error.message, true);
   }
@@ -522,7 +522,7 @@ async function activateProfileRoute(username) {
   mountProfilePanel();
   renderGrid();
   if (!configured) {
-    profileError = "Configure o Supabase para carregar perfis pÃºblicos.";
+    profileError = "Configure o Supabase para carregar perfis públicos.";
     mountProfilePanel();
     return;
   }
@@ -543,6 +543,7 @@ function canonicalPath(anchor) {
 function isNonUmbralsCard(anchor) {
   const path = canonicalPath(anchor);
   const name = anchor.querySelector(".text-center span")?.textContent || "";
+  if (path === "/item/10007/basic-form/1000") return false;
   return path.includes("/prismana-") ||
     /\/1000(?:\/|$)/.test(path) ||
     /inferlobo|infergon/i.test(name);
@@ -554,8 +555,6 @@ function ensureJaguaraunUmbralCard(grid) {
     .find(card => canonicalPath(card) === jaguaraunPath);
   if (existing) return existing;
 
-  // A cÃ³pia local da wiki antecede o lanÃ§amento do Jaguarraio. Reaproveitamos
-  // um card nativo para que ele participe dos mesmos filtros e controles.
   const template = grid.querySelector(":scope > a.aniimo-item-container");
   if (!template) return null;
   const card = template.cloneNode(true);
@@ -617,7 +616,7 @@ function addCardControls(anchor, path, mode, copies, allowAdd) {
     add.type = "button";
     add.className = "account-add-button";
     add.dataset.accountAdd = "true";
-    add.setAttribute("aria-label", `Adicionar ${identityFor(anchor, mode).name} Ã  coleÃ§Ã£o`);
+    add.setAttribute("aria-label", `Adicionar ${identityFor(anchor, mode).name} à coleção`);
     add.textContent = "+";
     anchor.append(add);
   }
@@ -626,8 +625,8 @@ function addCardControls(anchor, path, mode, copies, allowAdd) {
     remove.type = "button";
     remove.className = "account-remove-button";
     remove.dataset.accountRemove = "true";
-    remove.setAttribute("aria-label", `Remover uma cÃ³pia de ${identityFor(anchor, mode).name}`);
-    remove.textContent = "âˆ’";
+    remove.setAttribute("aria-label", `Remover uma cópia de ${identityFor(anchor, mode).name}`);
+    remove.textContent = "−";
     anchor.append(remove);
   }
   if (copies.length) {
@@ -635,8 +634,8 @@ function addCardControls(anchor, path, mode, copies, allowAdd) {
     count.type = "button";
     count.className = "account-count-badge";
     count.dataset.accountCopies = "true";
-    count.textContent = `${copies.length}Ã—`;
-    count.setAttribute("aria-label", `${copies.length} cÃ³pias. Gerenciar status inatos`);
+    count.textContent = `${copies.length}×`;
+    count.setAttribute("aria-label", `${copies.length} cópias. Gerenciar status inatos`);
     anchor.append(count);
   }
 }
@@ -648,9 +647,9 @@ function rowsFor(path, mode, rows) {
 function groupGridByAniimo(grid) {
   const cards = [...grid.querySelectorAll(":scope > a.aniimo-item-container:not([data-account-profile-clone])")];
   const regionOrder = new Map([
-    ["300001", 0], // PlanÃ­cies Ventosas
+    ["300001", 0], // Planícies Ventosas
     ["300301", 1], // Ilhas Sussurrantes
-    ["1000", 2] // LembranÃ§as da Temporada 1
+    ["1000", 2] // Lembranças da Temporada 1
   ]);
 
   cards.forEach((card, sourceOrder) => {
@@ -658,7 +657,7 @@ function groupGridByAniimo(grid) {
     const entry = Number(path.match(/\/item\/(\d+)/)?.[1]) || 999;
     const country = path.match(/\/(\d+)$/)?.[1] || "300001";
     const region = regionOrder.get(country) ?? 100 + Number(country || 0);
-    // RegiÃ£o â†’ nÃºmero do Aniimo â†’ ordem original das formas/variaÃ§Ãµes.
+    // Região → número do Aniimo → ordem original das formas/variações.
     card.style.order = String(region * 1_000_000 + entry * 1_000 + sourceOrder);
   });
 }
@@ -798,7 +797,7 @@ function umbralsProgress(rows) {
 
 function collectionUpdatedAtLabel(value) {
   const date = value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return "sem atualizaÃ§Ãµes";
+  if (!date || Number.isNaN(date.getTime())) return "sem atualizações";
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short"
@@ -811,13 +810,13 @@ function mountProfilePanel() {
     profilePanel = document.createElement("section");
     profilePanel.className = "account-profile-panel";
     profilePanel.innerHTML = `
-      <h2 data-profile-title>Perfil pÃºblico</h2>
+      <h2 data-profile-title>Perfil público</h2>
       <p data-profile-status aria-live="polite"></p>
       <label><input type="checkbox" data-only-owned> Mostrar apenas os Aniimos que tenho</label>
       <label><input type="checkbox" data-only-duplicates> Mostrar apenas repetidos</label>
       <button type="button" data-compare-duplicates hidden>Comparar repetidos</button>
-      <button type="button" data-share-profile>Copiar link pÃºblico</button>
-      <button type="button" data-home>Voltar Ã  pÃ¡gina inicial</button>
+      <button type="button" data-share-profile>Copiar link público</button>
+      <button type="button" data-home>Voltar à página inicial</button>
       <div class="account-umbrals-progress" data-umbrals-progress>
         <span data-umbrals-progress-label></span>
         <div class="account-umbrals-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" data-umbrals-progress-track>
@@ -839,18 +838,18 @@ function mountProfilePanel() {
     profilePanel.querySelector("[data-share-profile]").addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(location.href);
-        showToast("Link pÃºblico copiado.");
+        showToast("Link público copiado.");
       } catch {
-        showToast("NÃ£o foi possÃ­vel copiar automaticamente. Copie o endereÃ§o do navegador.", true);
+        showToast("Não foi possível copiar automaticamente. Copie o endereço do navegador.", true);
       }
     });
   }
   const title = profilePanel.querySelector("[data-profile-title]");
   const status = profilePanel.querySelector("[data-profile-status]");
-  const titleText = viewingProfile ? `ColeÃ§Ã£o de @${viewingProfile.username}` : "Perfil pÃºblico";
+  const titleText = viewingProfile ? `Coleção de @${viewingProfile.username}` : "Perfil público";
   const statusText = profileError || (viewingProfile
-    ? `${viewingRows.length} Aniimos na coleÃ§Ã£o${currentUser?.id === viewingProfile.id ? " â€” este Ã© o seu perfil" : ""}. Ãšltima atualizaÃ§Ã£o: ${collectionUpdatedAtLabel(viewingProfile.collection_updated_at)}.`
-    : "Carregando perfil pÃºblicoâ€¦");
+    ? `${viewingRows.length} Aniimos na coleção${currentUser?.id === viewingProfile.id ? " — este é o seu perfil" : ""}. Última atualização: ${collectionUpdatedAtLabel(viewingProfile.collection_updated_at)}.`
+    : "Carregando perfil público…");
   if (title.textContent !== titleText) title.textContent = titleText;
   status.classList.toggle("account-profile-error", Boolean(profileError));
   if (status.textContent !== statusText) status.textContent = statusText;
@@ -924,7 +923,7 @@ function catalogForTrades() {
     };
     walk(revive(0));
   } catch (error) {
-    console.warn("NÃ£o foi possÃ­vel ler o catÃ¡logo para as sugestÃµes de troca.", error);
+    console.warn("Não foi possível ler o catálogo para as sugestões de troca.", error);
   }
   return tradeCatalog;
 }
@@ -990,7 +989,7 @@ async function loadVariantImageCatalog() {
     document.baseURI
   );
   variantImageCatalogPromise = fetch(source).then(async response => {
-    if (!response.ok) throw new Error(`NÃ£o foi possÃ­vel carregar imagens das variantes (${response.status}).`);
+    if (!response.ok) throw new Error(`Não foi possível carregar imagens das variantes (${response.status}).`);
     const variants = await response.json();
     variantImageCatalog = new Map();
     for (const variant of variants) {
@@ -1020,8 +1019,8 @@ function normalizeAniimoPath(value) {
     const pathname = target.pathname
       .replace(new RegExp(`^/(${LOCALES})(?=/)`, "i"), "")
       .replace(/\/+$/, "");
-    // Os hrefs da wiki sÃ£o relativos. Em file://, URL os resolve sob o diretÃ³rio
-    // local (por exemplo, /C:/projeto/pt/item/034/...), nÃ£o sob a raiz da wiki.
+    // Os hrefs da wiki são relativos. Em file://, URL os resolve sob o diretório
+    // local (por exemplo, /C:/projeto/pt/item/034/...), não sob a raiz da wiki.
     const itemIndex = pathname.toLowerCase().indexOf("/item/");
     return (itemIndex >= 0 ? pathname.slice(itemIndex) : pathname).toLowerCase() || "/";
   } catch {
@@ -1092,8 +1091,8 @@ function tradeCard(group, owner, info) {
   const variantSrc = variantImageSrc(group.path);
   const domImgSrc = findCardImageSrc(group.path, group.mode);
   const fallbackSrc = info?.imageUrl ? new URL(info.imageUrl, document.baseURI).href : "";
-  // O HTML dos cards pode ainda nÃ£o conter a imagem por causa do lazy loading.
-  // O catÃ¡logo de variantes Ã© a fonte determinÃ­stica para formas como Trovoada.
+  // O HTML dos cards pode ainda não conter a imagem por causa do lazy loading.
+  // O catálogo de variantes é a fonte determinística para formas como Trovoada.
   image.src = variantSrc || domImgSrc || fallbackSrc;
   image.alt = `${group.name} (${variantLabel(group, info)})`;
 
@@ -1108,12 +1107,12 @@ function tradeCard(group, owner, info) {
 
   const variant = document.createElement("span");
   variant.className = "account-trade-card-variant";
-  const modeText = group.mode === "umbrais" ? " â€¢ Umbrais" : "";
+  const modeText = group.mode === "umbrais" ? " • Umbrais" : "";
   variant.textContent = `${variantLabel(group, info)}${modeText}`;
 
   const label = document.createElement("span");
   label.className = "account-trade-card-label";
-  label.textContent = `${owner}: ${group.count} cÃ³pias`;
+  label.textContent = `${owner}: ${group.count} cópias`;
 
   card.append(number, image, name, variant, label);
   return card;
@@ -1122,24 +1121,24 @@ function tradeCard(group, owner, info) {
 
 async function openDuplicateComparison() {
   if (!currentUser || !viewingProfile || currentUser.id === viewingProfile.id) {
-    showToast("Entre na sua conta e abra o perfil de outro usuÃ¡rio para comparar.", true);
+    showToast("Entre na sua conta e abra o perfil de outro usuário para comparar.", true);
     return;
   }
   try {
     await enableVariantsForProfile();
   } catch (error) {
-    showToast(error.message || "NÃ£o foi possÃ­vel preparar as variantes.", true);
+    showToast(error.message || "Não foi possível preparar as variantes.", true);
     return;
   }
   try {
     await loadVariantImageCatalog();
   } catch (error) {
-    // A comparaÃ§Ã£o continua disponÃ­vel com as imagens de reserva.
-    console.warn("NÃ£o foi possÃ­vel carregar o catÃ¡logo de imagens das variantes.", error);
+    // A comparação continua disponível com as imagens de reserva.
+    console.warn("Não foi possível carregar o catálogo de imagens das variantes.", error);
   }
   const myOwnedSpecies = new Set(ownRows.map(speciesKey));
   const theirOwnedSpecies = new Set(viewingRows.map(speciesKey));
-  // Uma troca sÃ³ existe quando os dois lados oferecem um repetido exclusivo.
+  // Uma troca só existe quando os dois lados oferecem um repetido exclusivo.
   const mine = [...duplicateGroups(ownRows).values()].filter(group => !theirOwnedSpecies.has(speciesKey(group)));
   const theirs = [...duplicateGroups(viewingRows).values()].filter(group => !myOwnedSpecies.has(speciesKey(group)));
   const pairs = [];
@@ -1175,8 +1174,8 @@ async function openDuplicateComparison() {
   const modal = modalShell(`
     <section class="account-modal account-comparison-modal" role="dialog" aria-modal="true" aria-labelledby="account-comparison-title">
       <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">&times;</button>
-      <h2 id="account-comparison-title">SugestÃµes de troca com @${viewingProfile.username}</h2>
-      <p>Cada par troca dois repetidos exclusivos: vocÃª recebe um Aniimo que ainda nÃ£o tem e a outra pessoa recebe um que ainda nÃ£o possui. As sugestÃµes nunca misturam Lumin, Gamma e Nova; regiÃ£o, elemento e funÃ§Ã£o definem a prioridade.</p>
+      <h2 id="account-comparison-title">Sugestões de troca com @${viewingProfile.username}</h2>
+      <p>Cada par troca dois repetidos exclusivos: você recebe um Aniimo que ainda não tem e a outra pessoa recebe um que ainda não possui. As sugestões nunca misturam Lumin, Gamma e Nova; região, elemento e função definem a prioridade.</p>
       <p class="account-modal-message" data-trade-message></p>
       <div class="account-trade-grid" data-trade-grid></div>
     </section>
@@ -1184,11 +1183,11 @@ async function openDuplicateComparison() {
   const grid = modal.querySelector("[data-trade-grid]");
   const message = modal.querySelector("[data-trade-message]");
   if (!catalogForTrades().size) {
-    message.textContent = "O catÃ¡logo da wiki nÃ£o foi carregado; atualize a pÃ¡gina e tente novamente.";
+    message.textContent = "O catálogo da wiki não foi carregado; atualize a página e tente novamente.";
     return;
   }
   if (!uniquePairs.length) {
-    message.textContent = "NÃ£o hÃ¡ uma troca compatÃ­vel entre os repetidos exclusivos de vocÃªs.";
+    message.textContent = "Não há uma troca compatível entre os repetidos exclusivos de vocês.";
     return;
   }
   for (const pair of uniquePairs.slice(0, 30)) {
@@ -1197,7 +1196,7 @@ async function openDuplicateComparison() {
     suggestion.append(tradeCard(pair.mine, `@${ownProfile.username}`, pair.mineInfo));
     const arrow = document.createElement("div");
     arrow.className = "account-trade-arrow";
-    arrow.textContent = "â‡„";
+    arrow.textContent = "⇄";
     suggestion.append(arrow, tradeCard(pair.theirs, `@${viewingProfile.username}`, pair.theirInfo));
     grid.append(suggestion);
   }
@@ -1209,7 +1208,7 @@ async function waitForGrid() {
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       observer.disconnect();
-      reject(new Error("A lista de Aniimos nÃ£o foi carregada."));
+      reject(new Error("A lista de Aniimos não foi carregada."));
     }, 20000);
     const observer = new MutationObserver(() => {
       const grid = document.querySelector(".aniimo-list-grid");
@@ -1259,18 +1258,18 @@ async function enableVariantsForProfile() {
     }
     await new Promise(resolve => window.setTimeout(resolve, 100));
   }
-  throw new Error("NÃ£o foi possÃ­vel carregar as variantes para o perfil.");
+  throw new Error("Não foi possível carregar as variantes para o perfil.");
 }
 
 async function loadPublicProfile() {
   if (!configured) {
-    profileError = "Configure o Supabase para carregar perfis pÃºblicos.";
+    profileError = "Configure o Supabase para carregar perfis públicos.";
     mountProfilePanel();
     return;
   }
   try {
     const profile = await findProfileByUsername(profileHandle.trim());
-    if (!profile) throw new Error("Este perfil nÃ£o existe ou o nome de usuÃ¡rio estÃ¡ incorreto.");
+    if (!profile) throw new Error("Este perfil não existe ou o nome de usuário está incorreto.");
     viewingProfile = profile;
     viewingRows = await loadCopies(profile.id);
     profileError = "";
@@ -1308,7 +1307,7 @@ async function addCopy(anchor) {
     ownRows = await loadCopies(currentUser.id);
     if (profileMode && viewingProfile?.id === currentUser.id) viewingRows = ownRows;
     renderGrid();
-    showToast(`${name} adicionado Ã  coleÃ§Ã£o.`);
+    showToast(`${name} adicionado à coleção.`);
   } catch (error) {
     showToast(error.message, true);
   }
@@ -1322,7 +1321,7 @@ async function removeCopy(anchor) {
   const { path, mode, name } = identityFor(anchor);
   const copy = ownRows.find(row => row.aniimo_path === path && row.background_mode === mode);
   if (!copy) {
-    showToast("NÃ£o foi possÃ­vel encontrar uma cÃ³pia para remover.", true);
+    showToast("Não foi possível encontrar uma cópia para remover.", true);
     return;
   }
   try {
@@ -1335,7 +1334,7 @@ async function removeCopy(anchor) {
       viewingRows = viewingRows.filter(row => row.id !== copy.id);
     }
     renderGrid();
-    showToast(`Uma cÃ³pia de ${name} foi removida.`);
+    showToast(`Uma cópia de ${name} foi removida.`);
   } catch (error) {
     showToast(error.message, true);
   }
@@ -1417,16 +1416,16 @@ function openCopyManager(key) {
   const editable = Boolean(currentUser && viewingProfile?.id === currentUser.id) || !profileMode;
   const modal = modalShell(`
     <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-stats-title">
-      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">Ã—</button>
+      <button class="account-modal-close" type="button" data-account-close aria-label="Fechar">×</button>
       <h2 id="account-stats-title">Status inatos</h2>
       <p data-copy-name></p>
       <div class="account-copy-list" data-copy-list></div>
-      <svg class="account-stat-chart" data-stat-chart viewBox="0 0 320 320" role="img" aria-label="GrÃ¡fico hexagonal dos status inatos"></svg>
+      <svg class="account-stat-chart" data-stat-chart viewBox="0 0 320 320" role="img" aria-label="Gráfico hexagonal dos status inatos"></svg>
       <div class="account-stat-controls" data-stat-controls></div>
       <p class="account-modal-message" aria-live="polite"></p>
       <div class="account-modal-actions">
         <button type="button" data-save-stats>Salvar status</button>
-        <button type="button" class="account-danger" data-delete-copy>Remover esta cÃ³pia</button>
+        <button type="button" class="account-danger" data-delete-copy>Remover esta cópia</button>
       </div>
     </section>
   `);
@@ -1478,7 +1477,7 @@ function openCopyManager(key) {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.copyId = row.id;
-    button.textContent = `CÃ³pia ${index + 1}`;
+    button.textContent = `Cópia ${index + 1}`;
     button.addEventListener("click", () => selectCopy(row));
     list.append(button);
   });
@@ -1559,7 +1558,7 @@ function openCopyManager(key) {
   });
 
   deleteButton.addEventListener("click", async () => {
-    if (!window.confirm("Remover esta cÃ³pia da coleÃ§Ã£o?")) return;
+    if (!window.confirm("Remover esta cópia da coleção?")) return;
     deleteButton.disabled = true;
     try {
       await restRequest(`aniimo_copies?id=eq.${encodeURIComponent(selected.id)}`, {
@@ -1570,7 +1569,7 @@ function openCopyManager(key) {
       viewingRows = viewingRows.filter(row => row.id !== selected.id);
       closeModal(modal);
       renderGrid();
-      showToast("CÃ³pia removida da coleÃ§Ã£o.");
+      showToast("Cópia removida da coleção.");
     } catch (error) {
       modalMessage(modal, error.message);
       deleteButton.disabled = false;
@@ -1636,5 +1635,4 @@ window.addEventListener("popstate", () => {
   onlyDuplicates = false;
   renderGrid();
 });
-
 
