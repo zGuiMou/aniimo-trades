@@ -1243,6 +1243,7 @@ async function enableVariantsForProfile() {
   const grid = await waitForGrid();
   if (!button) return;
   if (button.classList.contains("is-selected")) {
+    ensureJaguaraunUmbralCard(grid);
     cacheUmbralsCatalogPaths();
     return;
   }
@@ -1253,6 +1254,7 @@ async function enableVariantsForProfile() {
     const cardCount = grid.querySelectorAll(":scope > a.aniimo-item-container").length;
     if (variantsSelected && cardCount > 130) {
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      ensureJaguaraunUmbralCard(grid);
       cacheUmbralsCatalogPaths();
       return;
     }
