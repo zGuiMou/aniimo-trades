@@ -563,6 +563,14 @@ function ensureJaguaraunUmbralCard(grid) {
   card.querySelector(".aniimo-item-top-image > span")?.replaceChildren("NO.10007");
   const name = card.querySelector(".text-center span");
   if (name) name.textContent = "Jaguarraio";
+  const imageUrl = "https://worldx-website-cdn.aniimo.com/official-website/worldx/wiki_stage/init/Wiki_Aniimo_10713.png";
+  card.querySelectorAll("img").forEach(image => {
+    image.src = imageUrl;
+    image.removeAttribute("srcset");
+    image.removeAttribute("data-src");
+    image.removeAttribute("data-original");
+    image.alt = "Jaguarraio";
+  });
   card.querySelectorAll(".aniimo-item-attribute-item").forEach(item => {
     item.className = item.className.replace(/attributes-[\w-]+/g, "attributes-electric");
   });
